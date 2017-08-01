@@ -13,7 +13,7 @@ Controls:
 """
 
 from Tkinter import *
-from time import sleep
+import tkFont
 from random import randint
 import tkMessageBox
 import sys
@@ -81,9 +81,11 @@ class Board( Frame ):
         self.max_y = max_y
         self.offset = offset        
 
-        self.canvas = Canvas(parent,
+        self.canvas = Canvas(self,
                              height=(max_y * scale)+offset,
-                             width= (max_x * scale)+offset)
+                             width= (max_x * scale)+offset,
+                             bg = "black"
+                             )
         self.canvas.pack()
 
     def check_for_complete_row( self, blocks ):
@@ -204,6 +206,7 @@ class Board( Frame ):
             return True
 
 class Block(object):
+    # This could be replaced with a named tuple
     def __init__( self, id, (x, y)):
         self.id = id
         self.x = x
@@ -337,7 +340,7 @@ class shape_limited_rotate( shape ):
         else:
             self.clockwise=True
         
-
+# All this check_and_create stuff kind of smells - there has to be a better way of doing this.
 class square_shape( shape ):
     @classmethod
     def check_and_create( cls, board ):
@@ -386,7 +389,47 @@ class i_shape( shape_limited_rotate ):
     def check_and_create( cls, board ):
         coords =[(4,0),(3,0),(5,0),(6,0)]
         return super(i_shape, cls).check_and_create(board, coords, "blue")
-        
+
+
+class InfoPanel( Frame ):
+    """The info panel has a grid layout manager and displays the following game info:
+    * The score
+    * The level
+    * Preview panel - next tetrominoe.
+    * keyboard controls
+    * Quit button
+    * New game button
+    * Status e.g. if the game is Paused"""
+
+    def __init__(self, parent):
+        """Init the info panel e.g. do all the setup for it."""
+        Frame.__init__(self, parent)
+
+        self.parent = parent
+        self.score_var = StringVar()
+        self.level_var = StringVar()
+        self.update_score(0)
+        self.update_level(0)
+
+        my_font = tkFont.Font(root=self.parent, family="Times New Roman", size=16, weight="normal")
+        Label(self, text="Tetris TK", justify=CENTER, font=my_font).grid(column=0, row=0, columnspan=5)
+
+        Label(self, text="Score:").grid(column=0, row=1)
+        self.score_lbl = Label(self, bd=5, relief=SUNKEN, anchor=E, textvariable=self.score_var, width=10)
+        self.score_lbl.pack(fill=X)
+        self.score_lbl.grid(column=1, row=1, columnspan=4)
+
+        Label(self, text="Level:").grid(column=0, row=2)
+        self.level_lbl = Label(self, bd=5, relief=SUNKEN, anchor=E, textvariable=self.level_var, width=10)
+        self.level_lbl.pack(fill=X)
+        self.level_lbl.grid(column=1, row=2, columnspan=4)
+
+    def update_score(self, score):
+        self.score_var.set("{:>010d}".format(score))
+
+    def update_level(self, level):
+        self.level_var.set("{:>10d}".format(level))
+
 class game_controller(object):
     """
     Main game loop and receives GUI callback events for keypresses etc...
@@ -396,8 +439,6 @@ class game_controller(object):
         Intialise the game...
         """
         self.parent = parent
-        self.score = 0
-        self.level = 0
         self.delay = 1000    #ms
         
         #lookup table
@@ -411,13 +452,13 @@ class game_controller(object):
         
         self.thresholds = level_thresholds( 500, NO_OF_LEVELS )
         
-        self.status_bar = status_bar( parent )
-        self.status_bar.pack(side=TOP,fill=X)
-        #print "Status bar width",self.status_bar.cget("width")
-
-        self.status_bar.set("Score: %-7d\t Level: %d " % (
-            self.score, self.level+1)
-        )
+        # self.status_bar = status_bar( parent )
+        # self.status_bar.pack(side=TOP,fill=X)
+        # #print "Status bar width",self.status_bar.cget("width")
+        #
+        # self.status_bar.set("Score: %-7d\t Level: %d " % (
+        #     self.score, self.level+1)
+        # )
         
         self.board = Board(
             parent,
@@ -426,9 +467,15 @@ class game_controller(object):
             max_y=MAXY,
             offset=OFFSET
             )
-        
-        self.board.pack(side=BOTTOM)
-        
+
+        self.score = 0
+        self.level = 0
+
+        self.info_panel = InfoPanel(parent)
+
+        self.board.pack(side=LEFT, fill=Y)
+        self.info_panel.pack(side=LEFT, fill=Y)
+
         self.parent.bind("<Left>", self.left_callback)
         self.parent.bind("<Right>", self.right_callback)
         self.parent.bind("<Up>", self.up_callback)
@@ -436,14 +483,15 @@ class game_controller(object):
         self.parent.bind("a", self.a_callback)
         self.parent.bind("s", self.s_callback)
         self.parent.bind("p", self.p_callback)
+
         
         self.shape = self.get_next_shape()
         #self.board.output()
 
         self.after_id = self.parent.after( self.delay, self.move_my_shape )
-        
+
     def handle_move(self, direction):
-        #if you can't move then you've hit something
+        # if you can't move then you've hit something
         if not self.shape.move( direction ):
             
             # if your heading down then the shape has 'landed'
@@ -451,6 +499,7 @@ class game_controller(object):
                 self.score += self.board.check_for_complete_row(
                     self.shape.blocks
                     )
+                self.info_panel.update_score(self.score)
                 del self.shape
                 self.shape = self.get_next_shape()
                 
@@ -472,11 +521,12 @@ class game_controller(object):
                 if (self.level < NO_OF_LEVELS and 
                     self.score >= self.thresholds[ self.level]):
                     self.level+=1
+                    self.info_panel.update_level(self.level)
                     self.delay-=100
                     
-                self.status_bar.set("Score: %-7d\t Level: %d " % (
-                    self.score, self.level+1)
-                )
+                # self.status_bar.set("Score: %-7d\t Level: %d " % (
+                #     self.score, self.level+1)
+                # )
                 
                 # Signal that the shape has 'landed'
                 return False
