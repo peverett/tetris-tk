@@ -390,6 +390,7 @@ class i_shape( shape_limited_rotate ):
         coords =[(4,0),(3,0),(5,0),(6,0)]
         return super(i_shape, cls).check_and_create(board, coords, "blue")
 
+WID=10
 
 class InfoPanel( Frame ):
     """The info panel has a grid layout manager and displays the following game info:
@@ -423,6 +424,31 @@ class InfoPanel( Frame ):
         self.level_lbl = Label(self, bd=5, relief=SUNKEN, anchor=E, textvariable=self.level_var, width=10)
         self.level_lbl.pack(fill=X)
         self.level_lbl.grid(column=1, row=2, columnspan=4)
+
+        for i in range(5):
+            temp = Label(self, text="...", width=5)
+            temp.grid(column=i, row=3)
+
+        Label(self, text="Controls").grid(column=0, row=4, columnspan=5)
+        Label(self, text="Pause game:").grid(column=0, row=5, columnspan=2)
+        Label(self, text="P", width=2, relief=GROOVE, justify=RIGHT).grid(column=1, row=5, columnspan=3)
+
+        Label(self, text="Rotate:", width=WID).grid(column=0, row=6, columnspan=2)
+        Label(self, text="A", width=2, relief=GROOVE).grid(column=2, row=6)
+        Label(self, text="S", width=2, relief=GROOVE).grid(column=3, row=6)
+        Label(self, text="Left").grid(column=2, row=7)
+        Label(self, text="Right").grid(column=3, row=7)
+
+        Label(self, text="Drop:", width=WID).grid(column=0, row=8, columnspan=2)
+        Label(self, text="^", width=2, relief=GROOVE).grid(column=3, row=8)
+
+        Label(self, text="Move:", width=WID).grid(column=0, row=9, columnspan=2)
+        Label(self, text="<", width=2, relief=GROOVE).grid(column=2, row=9)
+        Label(self, text="v", width=2, relief=GROOVE).grid(column=3, row=9)
+        Label(self, text=">", width=2, relief=GROOVE).grid(column=4, row=9)
+        Label(self, text="Left").grid(column=2, row=10)
+        Label(self, text="Down").grid(column=3, row=10)
+        Label(self, text="Right").grid(column=4, row=10)
 
     def update_score(self, score):
         self.score_var.set("{:>010d}".format(score))
