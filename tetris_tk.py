@@ -18,7 +18,7 @@ from random import randint
 import tkMessageBox
 import sys
 
-SCALE = 20
+SCALE = 30
 OFFSET = 3
 MAXX = 10
 MAXY = 22
@@ -30,6 +30,12 @@ RIGHT = "right"
 DOWN = "down"
 
 direction_d = { "left": (-1, 0), "right": (1, 0), "down": (0, 1) }
+
+# Game States
+READY = "READY"
+GAME_OVER = "GAME OVER"
+PAUSED = "PAUSED"
+PLAYING = "PLAYING"
 
 def level_thresholds( first_level, no_of_levels ):
     """
@@ -402,59 +408,87 @@ class InfoPanel( Frame ):
     * New game button
     * Status e.g. if the game is Paused"""
 
-    def __init__(self, parent):
+    def __init__(self, parent, new_game_fn, quit_fn):
         """Init the info panel e.g. do all the setup for it."""
-        Frame.__init__(self, parent)
+        Frame.__init__(self, parent, bg="grey")
 
         self.parent = parent
         self.score_var = StringVar()
         self.level_var = StringVar()
+        self.state_var = StringVar()
         self.update_score(0)
         self.update_level(0)
 
         my_font = tkFont.Font(root=self.parent, family="Times New Roman", size=16, weight="normal")
-        Label(self, text="Tetris TK", justify=CENTER, font=my_font).grid(column=0, row=0, columnspan=5)
+        Label(self, text="Tetris TK", justify=CENTER, font=my_font, pady=5).pack(side=TOP, fill=X)
 
-        Label(self, text="Score:").grid(column=0, row=1)
-        self.score_lbl = Label(self, bd=5, relief=SUNKEN, anchor=E, textvariable=self.score_var, width=10)
-        self.score_lbl.pack(fill=X)
-        self.score_lbl.grid(column=1, row=1, columnspan=4)
+        slf = LabelFrame(self, padx=5, pady=5)
+        slf.pack(side=TOP, fill=X)
+        Label(slf, text="Score:", anchor=W, justify=LEFT, width=10).grid(column=0, row=0)
+        score_lbl = Label(slf, bd=5, relief=SUNKEN, anchor=E, textvariable=self.score_var, width=10)
+        score_lbl.grid(column=1, row=0)
 
-        Label(self, text="Level:").grid(column=0, row=2)
-        self.level_lbl = Label(self, bd=5, relief=SUNKEN, anchor=E, textvariable=self.level_var, width=10)
-        self.level_lbl.pack(fill=X)
-        self.level_lbl.grid(column=1, row=2, columnspan=4)
+        Label(slf, text="Level:", anchor=W, justify=LEFT, width=10).grid(column=0, row=1)
+        level_lbl = Label(slf, bd=5, relief=SUNKEN, anchor=E, textvariable=self.level_var, width=10)
+        level_lbl.grid(column=1, row=1)
 
-        for i in range(5):
-            temp = Label(self, text="...", width=5)
-            temp.grid(column=i, row=3)
+        preview_frame = LabelFrame(self, text="Preview", padx=5, pady=5)
+        preview = Canvas(
+            preview_frame,
+            width=(SCALE * 4) + OFFSET,
+            height=(SCALE * 4) + OFFSET,
+            bg="black",
+            )
+        preview.pack()
+        preview_frame.pack(fill=X)
 
-        Label(self, text="Controls").grid(column=0, row=4, columnspan=5)
-        Label(self, text="Pause game:").grid(column=0, row=5, columnspan=2)
-        Label(self, text="P", width=2, relief=GROOVE, justify=RIGHT).grid(column=1, row=5, columnspan=3)
+        ctrl_frame = LabelFrame(self, text="Controls", padx=5, pady=5)
+        ctrl_frame.pack(side=TOP, fill=X)
 
-        Label(self, text="Rotate:", width=WID).grid(column=0, row=6, columnspan=2)
-        Label(self, text="A", width=2, relief=GROOVE).grid(column=2, row=6)
-        Label(self, text="S", width=2, relief=GROOVE).grid(column=3, row=6)
-        Label(self, text="Left").grid(column=2, row=7)
-        Label(self, text="Right").grid(column=3, row=7)
+        Label(ctrl_frame, text="Pause:", anchor=W, justify=LEFT, width=8).grid(column=0, row=0, columnspan=2)
+        Label(ctrl_frame, text="P", width=5, relief=GROOVE).grid(column=2, row=0)
 
-        Label(self, text="Drop:", width=WID).grid(column=0, row=8, columnspan=2)
-        Label(self, text="^", width=2, relief=GROOVE).grid(column=3, row=8)
+        Label(ctrl_frame, text="   ").grid(column=2, row=1) # blank line
 
-        Label(self, text="Move:", width=WID).grid(column=0, row=9, columnspan=2)
-        Label(self, text="<", width=2, relief=GROOVE).grid(column=2, row=9)
-        Label(self, text="v", width=2, relief=GROOVE).grid(column=3, row=9)
-        Label(self, text=">", width=2, relief=GROOVE).grid(column=4, row=9)
-        Label(self, text="Left").grid(column=2, row=10)
-        Label(self, text="Down").grid(column=3, row=10)
-        Label(self, text="Right").grid(column=4, row=10)
+        Label(ctrl_frame, text="Drop:", anchor=W, justify=LEFT, width=8).grid(column=0, row=2, columnspan=2)
+        Label(ctrl_frame, text="^", width=5, relief=GROOVE).grid(column=3, row=2)
+
+        Label(ctrl_frame, text="Move:", anchor=W, justify=LEFT, width=8).grid(column=0, row=3, columnspan=2)
+        Label(ctrl_frame, text="<", width=5, relief=GROOVE).grid(column=2, row=3)
+        Label(ctrl_frame, text="v", width=5, relief=GROOVE).grid(column=3, row=3)
+        Label(ctrl_frame, text=">", width=5, relief=GROOVE).grid(column=4, row=3)
+
+        Label(ctrl_frame, text="Left").grid(column=2, row=4)
+        Label(ctrl_frame, text="Down").grid(column=3, row=4)
+        Label(ctrl_frame, text="Right").grid(column=4, row=4)
+
+        Label(ctrl_frame, text="Rotate:", anchor=W, justify=LEFT, width=8).grid(column=0, row=5, columnspan=2)
+        Label(ctrl_frame, text="A", width=5, relief=GROOVE).grid(column=2, row=5)
+        Label(ctrl_frame, text="S", width=5, relief=GROOVE).grid(column=4, row=5)
+
+        state_frame = LabelFrame(self, text="State", padx=5, pady=5)
+        state_frame.pack(side=TOP, fill=X)
+        Label(state_frame, textvariable=self.state_var, justify=CENTER, font=my_font).pack(side=TOP, fill=X)
+
+        btn_frame = LabelFrame(self, padx=5, pady=5)
+        btn_frame.pack(side=BOTTOM, fill=X)
+        self.new_game_bttn = Button(btn_frame, text="New Game", padx=5, pady=5, command=new_game_fn)
+        self.new_game_bttn.pack(side=BOTTOM, fill=X)
+        self.quit_bttn = Button(btn_frame, text = "Quit", padx=5, pady=5, command=quit_fn)
+        self.quit_bttn.pack(side=TOP, fill=X)
 
     def update_score(self, score):
         self.score_var.set("{:>010d}".format(score))
 
     def update_level(self, level):
         self.level_var.set("{:>10d}".format(level))
+
+    def update_state(self, state):
+        self.state_var.set(state)
+        if state not in PLAYING:
+            self.new_game_bttn.config(state=NORMAL)
+        else:
+            self.new_game_bttn.config(state=DISABLED)
 
 class game_controller(object):
     """
@@ -497,7 +531,7 @@ class game_controller(object):
         self.score = 0
         self.level = 0
 
-        self.info_panel = InfoPanel(parent)
+        self.info_panel = InfoPanel(parent, self.new_game_fn, self.quit_fn)
 
         self.board.pack(side=LEFT, fill=Y)
         self.info_panel.pack(side=LEFT, fill=Y)
@@ -510,11 +544,18 @@ class game_controller(object):
         self.parent.bind("s", self.s_callback)
         self.parent.bind("p", self.p_callback)
 
-        
+        self.state = READY
+        self.info_panel.update_state(self.state)
+        # must press 'New Game' to start.
         self.shape = self.get_next_shape()
         #self.board.output()
 
-        self.after_id = self.parent.after( self.delay, self.move_my_shape )
+    def new_game_fn(self):
+        self.state = PLAYING
+        self.info_panel.update_state(self.state)
+        self.score = 0
+        self.level = 0
+        self.after_id = self.parent.after(self.delay, self.move_my_shape)
 
     def handle_move(self, direction):
         # if you can't move then you've hit something
@@ -603,8 +644,11 @@ class game_controller(object):
         """
         the_shape = self.shapes[ randint(0,len(self.shapes)-1) ]
         return the_shape.check_and_create(self.board)
-        
-        
+
+    def quit_fn(self):
+        self.parent.quit()
+
+
 if __name__ == "__main__":
     root = Tk()
     root.title("Tetris Tk")
