@@ -37,6 +37,40 @@ GAME_OVER = "GAME OVER"
 PAUSED = "PAUSED"
 PLAYING = "PLAYING"
 
+class Coord(object):
+    """
+    Represents x, y coordinates in a flat plane.
+    """
+    def __init__(self, x, y):
+        """
+        Initialise the class
+        :param x: X coordinate - an integer
+        :param y: Y Coordinate - an integer
+        """
+        self.x = x
+        self.y = y
+
+    def __add__(self, other):
+        """
+        Add this Coord to the other Coord.
+        :param other: Other Coordinate
+        :return: A Coord that is the sum of this Coord and the other Coord.
+        """
+        return Coord(self.x + other.x, self.y, other.y)
+
+    def __eq__(self, other):
+        """
+        Is the other Coord equal to this Coord
+        :param other: Other Coordinate
+        :return: True if they are the same, otherwise False
+        """
+        return self.x == other.x and self.y == other.y
+
+    def __repr__(self):
+        """"Unambiguous representation"""
+        return "Coord(x={}, y={})".format(self.x, self.y)
+
+
 def level_thresholds( first_level, no_of_levels ):
     """
     Calculates the score at which the level will change, for n levels.
