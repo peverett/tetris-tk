@@ -82,16 +82,16 @@ def level_thresholds( first_level, no_of_levels ):
     
     return thresholds
 
-
 class TBoard(Frame):
     """
     A Frame containing a Canvas, on which blocks can be displayed, moved and deleted, at will. A block is just a Canvas
     rectangle. Tetrominoes are made up of blocks.
 
+
     This is simplifying the Canvas object so that the blocks can be placed and manipulated by coordinated in an
     X, Y Grid, and this class will scale them appropriately.
     """
-    def __init__(self, parent, scale, max_x, max_y, offset=3):
+    def __init__(self, parent, scale, max_x, max_y, offset):
         """
         Created the TBoard. It is up to the creator to Pack/Grid this.
         :param parent: The parent TKinter object
@@ -116,7 +116,7 @@ class TBoard(Frame):
 
         self.canvas.pack()
 
-    def add_block(self, x, y, colour):
+    def add_block(self, (x, y), colour):
             """
             Add a block (rectangle of size (1 * SCALE)**2)
             :param self: instance
@@ -130,7 +130,7 @@ class TBoard(Frame):
 
             return self.canvas.create_rectangle(rx, ry, rx + self.scale, ry + self.scale, fill=colour)
 
-    def move_block(self, id, x, y):
+    def move_block(self, id, (x, y)):
             """
             Move a block by relative x, y coordinate distance.
             :param self: instance
@@ -149,7 +149,8 @@ class TBoard(Frame):
             """
             self.canvas.delete(id)
 
-class Board( Frame ):
+
+class TetrisBoard(TBoard):
     """
     The board represents the tetris playing area. A grid of x by y blocks.
     """
@@ -161,23 +162,8 @@ class Board( Frame ):
         max Y (in blocks) = 20
         offset (in pixels) = 3
         """
-        Frame.__init__(self, parent)
-        
-        # blocks are indexed by there corrdinates e.g. (4,5), these are
+        TBoard.__init__(self, parent, scale, max_x, max_y, offset)
         self.landed = {}
-        self.parent = parent
-        self.scale = scale
-        self.max_x = max_x
-        self.max_y = max_y
-        self.offset = offset        
-
-        self.canvas = Canvas(self,
-                             height=(max_y * scale)+offset,
-                             width= (max_x * scale)+offset,
-                             bg = "black"
-                             )
-        self.canvas.pack()
-
 
     def check_for_complete_row( self, blocks ):
         """
@@ -245,7 +231,7 @@ class Board( Frame ):
         
         # return the score, calculated by the number of rows deleted.        
         return (100 * rows_deleted) * rows_deleted
-                
+
     def output( self ):
         for y in xrange(self.max_y):
             line = []
@@ -255,34 +241,7 @@ class Board( Frame ):
                 else:
                     line.append(".")
             print "".join(line)
-            
-    def add_block( self, (x, y), colour):
-        """
-        Create a block by drawing it on the canvas, return
-        it's ID to the caller.
-        """
-        rx = (x * self.scale) + self.offset
-        ry = (y * self.scale) + self.offset
-        
-        return self.canvas.create_rectangle(
-            rx, ry, rx+self.scale, ry+self.scale, fill=colour
-        )
-        
-    def move_block( self, id, coord):
-        """
-        Move the block, identified by 'id', by x and y. Note this is a
-        relative movement, e.g. move 10, 10 means move 10 pixels right and
-        10 pixels down NOT move to position 10,10. 
-        """
-        x, y = coord
-        self.canvas.move(id, x*self.scale, y*self.scale)
-        
-    def delete_block(self, id):
-        """
-        Delete the identified block
-        """
-        self.canvas.delete( id )
-        
+
     def check_block( self, (x, y) ):
         """
         Check if the x, y coordinate can have a block placed there.
@@ -617,7 +576,7 @@ class game_controller(object):
         #     self.score, self.level+1)
         # )
         
-        self.board = Board(
+        self.board = TetrisBoard(
             parent,
             scale=SCALE,
             max_x=MAXX,
