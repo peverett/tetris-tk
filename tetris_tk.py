@@ -211,6 +211,7 @@ class Board( Frame ):
         else:
             return True
 
+
 class Block(object):
     # This could be replaced with a named tuple
     def __init__( self, id, (x, y)):
@@ -220,8 +221,9 @@ class Block(object):
         
     def coord( self ):
         return (self.x, self.y)
-        
-class shape(object):
+
+
+class Shape(object):
     """
     Shape is the  Base class for the game pieces e.g. square, T, S, Z, L,
     reverse L and I. Shapes are constructed of blocks. 
@@ -323,8 +325,9 @@ class shape(object):
             self.blocks[idx].y = y
        
         return True
-    
-class shape_limited_rotate( shape ):
+
+
+class LimitedRotateShape(Shape):
     """
     This is a base class for the shapes like the S, Z and I that don't fully
     rotate (which would result in the shape moving *up* one block on a 180).
@@ -333,72 +336,81 @@ class shape_limited_rotate( shape ):
     """
     def __init__( self, board, coords, colour ):
         self.clockwise = True
-        super(shape_limited_rotate, self).__init__(board, coords, colour)
+        super(LimitedRotateShape, self).__init__(board, coords, colour)
     
     def rotate(self, clockwise=True):
         """
         Clockwise, is used to indicate if the shape should rotate clockwise
         or back again anti-clockwise. It is toggled.
         """
-        super(shape_limited_rotate, self).rotate(clockwise=self.clockwise)
+        super(LimitedRotateShape, self).rotate(clockwise=self.clockwise)
         if self.clockwise:
             self.clockwise=False
         else:
             self.clockwise=True
         
 # All this check_and_create stuff kind of smells - there has to be a better way of doing this.
-class square_shape( shape ):
+
+
+class SquareShape(Shape):
     @classmethod
     def check_and_create( cls, board ):
         coords = [(4,0),(5,0),(4,1),(5,1)]
-        return super(square_shape, cls).check_and_create(board, coords, "red")
+        return super(SquareShape, cls).check_and_create(board, coords, "red")
         
     def rotate(self, clockwise=True):
         """
         Override the rotate method for the square shape to do exactly nothing!
         """
         pass
-        
-class t_shape( shape ):
+
+
+class TShape(Shape):
     @classmethod
     def check_and_create( cls, board ):
         coords = [(4,0),(3,0),(5,0),(4,1)]
-        return super(t_shape, cls).check_and_create(board, coords, "yellow" )
-        
-class l_shape( shape ):
+        return super(TShape, cls).check_and_create(board, coords, "yellow")
+
+
+class LShape(Shape):
     @classmethod
     def check_and_create( cls, board ):
         coords = [(4,0),(3,0),(5,0),(3,1)]
-        return super(l_shape, cls).check_and_create(board, coords, "orange")
-    
-class reverse_l_shape( shape ):
+        return super(LShape, cls).check_and_create(board, coords, "orange")
+
+
+class JShape(Shape):
     @classmethod
     def check_and_create( cls, board ):
         coords = [(5,0),(4,0),(6,0),(6,1)]
-        return super(reverse_l_shape, cls).check_and_create(
+        return super(JShape, cls).check_and_create(
             board, coords, "green")
-        
-class z_shape( shape_limited_rotate ):
+
+
+class ZShape(LimitedRotateShape):
     @classmethod
     def check_and_create( cls, board ):
         coords =[(5,0),(4,0),(5,1),(6,1)]
-        return super(z_shape, cls).check_and_create(board, coords, "purple")
+        return super(ZShape, cls).check_and_create(board, coords, "purple")
         
-class s_shape( shape_limited_rotate ):
+
+class SShape(LimitedRotateShape):
     @classmethod
     def check_and_create( cls, board ):
         coords =[(5,1),(4,1),(5,0),(6,0)]
-        return super(s_shape, cls).check_and_create(board, coords, "magenta")
-        
-class i_shape( shape_limited_rotate ):
+        return super(SShape, cls).check_and_create(board, coords, "magenta")
+
+
+class IShape(LimitedRotateShape):
     @classmethod
     def check_and_create( cls, board ):
         coords =[(4,0),(3,0),(5,0),(6,0)]
-        return super(i_shape, cls).check_and_create(board, coords, "blue")
+        return super(IShape, cls).check_and_create(board, coords, "blue")
 
-WID=10
+WID = 10
 
-class InfoPanel( Frame ):
+
+class InfoPanel(Frame):
     """The info panel has a grid layout manager and displays the following game info:
     * The score
     * The level
@@ -501,14 +513,14 @@ class game_controller(object):
         self.parent = parent
         self.delay = 1000    #ms
         
-        #lookup table
-        self.shapes = [square_shape,
-                      t_shape,
-                      l_shape,
-                      reverse_l_shape,
-                      z_shape,
-                      s_shape,
-                      i_shape ]
+        # lookup table
+        self.shapes = [SquareShape,
+                       TShape,
+                       LShape,
+                       JShape,
+                       ZShape,
+                       SShape,
+                       IShape]
         
         self.thresholds = level_thresholds( 500, NO_OF_LEVELS )
         
