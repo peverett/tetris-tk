@@ -82,6 +82,73 @@ def level_thresholds( first_level, no_of_levels ):
     
     return thresholds
 
+
+class TBoard(Frame):
+    """
+    A Frame containing a Canvas, on which blocks can be displayed, moved and deleted, at will. A block is just a Canvas
+    rectangle. Tetrominoes are made up of blocks.
+
+    This is simplifying the Canvas object so that the blocks can be placed and manipulated by coordinated in an
+    X, Y Grid, and this class will scale them appropriately.
+    """
+    def __init__(self, parent, scale, max_x, max_y, offset=3):
+        """
+        Created the TBoard. It is up to the creator to Pack/Grid this.
+        :param parent: The parent TKinter object
+        :param scale: Scale e.g. scale an x by y 'block' by 'scale' pixels.
+        :param max_x: max X coordinate
+        :param max_y: max Y coordinate
+        :param offset: Offset from top left for block creation.
+        """
+        Frame.__init__(self, parent)
+        self.parent = parent
+        self.scale = scale
+        self.max_x = max_x
+        self.max_y = max_y
+        self.offset = offset
+
+        self.canvas = Canvas(
+            self,
+            height=(max_y * scale) + offset,
+            width=(max_x * scale) + offset,
+            bg="black"
+            )
+
+        self.canvas.pack()
+
+    def add_block(self, x, y, colour):
+            """
+            Add a block (rectangle of size (1 * SCALE)**2)
+            :param self: instance
+            :param x: Coordinate
+            :param y: Coordinate
+            :param colour: Block colour
+            :return: The Tkinter ID of the block (rectangle) on the canvas.
+            """
+            rx = (x * self.scale) + self.offset
+            ry = (y * self.scale) + self.offset
+
+            return self.canvas.create_rectangle(rx, ry, rx + self.scale, ry + self.scale, fill=colour)
+
+    def move_block(self, id, x, y):
+            """
+            Move a block by relative x, y coordinate distance.
+            :param self: instance
+            :param id: Canvas id of the block (rectangle)
+            :param x: relative X coordinate distance to move
+            :param y: relative Y coordinate distance to move
+            """
+            self.canvas.move(id, x * self.scale, y * self.scale)
+
+    def delete_block(self, id):
+            """
+            Delete the identified block
+            :param self: instance
+            :param id: Canvas id of the block (rectangle) to delete.
+            :return:
+            """
+            self.canvas.delete(id)
+
 class Board( Frame ):
     """
     The board represents the tetris playing area. A grid of x by y blocks.
@@ -110,6 +177,7 @@ class Board( Frame ):
                              bg = "black"
                              )
         self.canvas.pack()
+
 
     def check_for_complete_row( self, blocks ):
         """
