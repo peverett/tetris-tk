@@ -17,6 +17,7 @@ import tkFont
 from random import randint
 import tkMessageBox
 import sys
+from collections import namedtuple
 
 SCALE = 30
 OFFSET = 3
@@ -37,39 +38,7 @@ GAME_OVER = "GAME OVER"
 PAUSED = "PAUSED"
 PLAYING = "PLAYING"
 
-class Coord(object):
-    """
-    Represents x, y coordinates in a flat plane.
-    """
-    def __init__(self, x, y):
-        """
-        Initialise the class
-        :param x: X coordinate - an integer
-        :param y: Y Coordinate - an integer
-        """
-        self.x = x
-        self.y = y
-
-    def __add__(self, other):
-        """
-        Add this Coord to the other Coord.
-        :param other: Other Coordinate
-        :return: A Coord that is the sum of this Coord and the other Coord.
-        """
-        return Coord(self.x + other.x, self.y, other.y)
-
-    def __eq__(self, other):
-        """
-        Is the other Coord equal to this Coord
-        :param other: Other Coordinate
-        :return: True if they are the same, otherwise False
-        """
-        return self.x == other.x and self.y == other.y
-
-    def __repr__(self):
-        """"Unambiguous representation"""
-        return "Coord(x={}, y={})".format(self.x, self.y)
-
+Coord = namedtuple("Coord", ['x', 'y'])
 
 def level_thresholds( first_level, no_of_levels ):
     """
@@ -86,7 +55,6 @@ class TBoard(Frame):
     """
     A Frame containing a Canvas, on which blocks can be displayed, moved and deleted, at will. A block is just a Canvas
     rectangle. Tetrominoes are made up of blocks.
-
 
     This is simplifying the Canvas object so that the blocks can be placed and manipulated by coordinated in an
     X, Y Grid, and this class will scale them appropriately.
@@ -116,7 +84,7 @@ class TBoard(Frame):
 
         self.canvas.pack()
 
-    def add_block(self, (x, y), colour):
+    def add_block(self, coord, colour):
             """
             Add a block (rectangle of size (1 * SCALE)**2)
             :param self: instance
@@ -125,12 +93,12 @@ class TBoard(Frame):
             :param colour: Block colour
             :return: The Tkinter ID of the block (rectangle) on the canvas.
             """
-            rx = (x * self.scale) + self.offset
-            ry = (y * self.scale) + self.offset
+            rx = (coord.x * self.scale) + self.offset
+            ry = (coord.y * self.scale) + self.offset
 
             return self.canvas.create_rectangle(rx, ry, rx + self.scale, ry + self.scale, fill=colour)
 
-    def move_block(self, id, (x, y)):
+    def move_block(self, id, coord):
             """
             Move a block by relative x, y coordinate distance.
             :param self: instance
@@ -138,7 +106,7 @@ class TBoard(Frame):
             :param x: relative X coordinate distance to move
             :param y: relative Y coordinate distance to move
             """
-            self.canvas.move(id, x * self.scale, y * self.scale)
+            self.canvas.move(id, coord.x * self.scale, coord.y * self.scale)
 
     def delete_block(self, id):
             """
@@ -171,10 +139,11 @@ class TetrisBoard(TBoard):
         or until an empty row is reached.
         """
         rows_deleted = 0
-        
+
+        # TO DO - This is not atomic and could be improved.
         # Add the blocks to those in the grid that have already 'landed'
         for block in blocks:
-            self.landed[ block.coord() ] = block.id
+            self.landed[block.coord] = block.id
         
         empty_row = 0
 
@@ -182,7 +151,7 @@ class TetrisBoard(TBoard):
         for y in xrange(self.max_y -1, -1, -1):
             row_is_empty = True
             for x in xrange(self.max_x):
-                if self.landed.get((x,y), None):
+                if self.landed.get(Coord(x, y), None):
                     row_is_empty = False
                     break;
             if row_is_empty:
@@ -195,7 +164,7 @@ class TetrisBoard(TBoard):
  
             complete_row = True
             for x in xrange(self.max_x):
-                if self.landed.get((x,y), None) is None:
+                if self.landed.get(Coord(x, y), None) is None:
                     complete_row = False
                     break;
 
@@ -204,7 +173,7 @@ class TetrisBoard(TBoard):
                 
                 #delete the completed row
                 for x in xrange(self.max_x):
-                    block = self.landed.pop((x,y))
+                    block = self.landed.pop(Coord(x, y))
                     self.delete_block(block)
                     del block
 
@@ -212,13 +181,14 @@ class TetrisBoard(TBoard):
                 # move all the rows above it down
                 for ay in xrange(y-1, empty_row, -1):
                     for x in xrange(self.max_x):
-                        block = self.landed.get((x,ay), None)
+                        block = self.landed.get(Coord(x, ay), None)
                         if block:
-                            block = self.landed.pop((x,ay))
+                            block = self.landed.pop(Coord(x, ay))
                             dx,dy = direction_d[DOWN]
-                            
-                            self.move_block(block, direction_d[DOWN])
-                            self.landed[(x+dx, ay+dy)] = block
+
+                            tx, ty = direction_d[DOWN]   # FIX THIS
+                            self.move_block(block, Coord(tx, ty))
+                            self.landed[Coord(x+dx, ay+dy)] = block
 
                 # move the empty row down index down too
                 empty_row +=1
@@ -236,21 +206,21 @@ class TetrisBoard(TBoard):
         for y in xrange(self.max_y):
             line = []
             for x in xrange(self.max_x):
-                if self.landed.get((x,y), None):
+                if self.landed.get(Coord(x, y), None):
                     line.append("X")
                 else:
                     line.append(".")
             print "".join(line)
 
-    def check_block( self, (x, y) ):
+    def check_block(self, coord):
         """
         Check if the x, y coordinate can have a block placed there.
         That is; if there is a 'landed' block there or it is outside the
         board boundary, then return False, otherwise return true.
         """
-        if x < 0 or x >= self.max_x or y < 0 or y >= self.max_y:
+        if coord.x < 0 or coord.x >= self.max_x or coord.y >= self.max_y:
             return False
-        elif self.landed.has_key( (x, y) ):
+        elif self.landed.has_key(coord):
             return False
         else:
             return True
@@ -258,13 +228,9 @@ class TetrisBoard(TBoard):
 
 class Block(object):
     # This could be replaced with a named tuple
-    def __init__( self, id, (x, y)):
+    def __init__( self, id, coord):
         self.id = id
-        self.x = x
-        self.y = y
-        
-    def coord( self ):
-        return (self.x, self.y)
+        self.coord = coord
 
 
 class Shape(object):
@@ -272,30 +238,20 @@ class Shape(object):
     Shape is the  Base class for the game pieces e.g. square, T, S, Z, L,
     reverse L and I. Shapes are constructed of blocks. 
     """
-    @classmethod        
-    def check_and_create(cls, board, coords, colour ):
-        """
-        Check if the blocks that make the shape can be placed in empty coords
-        before creating and returning the shape instance. Otherwise, return
-        None.
-        """
-        for coord in coords:
-            if not board.check_block( coord ):
-                return None
-        
-        return cls( board, coords, colour)
-            
-    def __init__(self, board, coords, colour ):
+    def __init__(self, board, coords, colour, offset=None):
         """
         Initialise the shape base.
         """
         self.board = board
         self.blocks = []
+
+        if offset is not None:
+            coords = map(lambda c: Coord(c.x+offset.x, c.y+offset.y), coords)
         
         for coord in coords:
-            block = Block(self.board.add_block( coord, colour), coord)
+            block = Block(self.board.add_block(coord, colour), coord)
             
-            self.blocks.append( block )
+            self.blocks.append(block)
             
     def move( self, direction ):
         """
@@ -306,68 +262,63 @@ class Shape(object):
         
         for block in self.blocks:
 
-            x = block.x + d_x
-            y = block.y + d_y
+            x = block.coord.x + d_x
+            y = block.coord.y + d_y
             
-            if not self.board.check_block( (x, y) ):
+            if not self.board.check_block(Coord(x, y)):
                 return False
             
         for block in self.blocks:
             
-            x = block.x + d_x
-            y = block.y + d_y
+            x = block.coord.x + d_x
+            y = block.coord.y + d_y
             
-            self.board.move_block( block.id, (d_x, d_y) )
-            
-            block.x = x
-            block.y = y
-        
+            self.board.move_block(block.id, Coord(d_x, d_y))
+
+            block.coord = Coord(x, y)
+
         return True
             
-    def rotate(self, clockwise = True):
+    def rotate(self, clockwise=True):
         """
         Rotate the blocks around the 'middle' block, 90-degrees. The
         middle block is always the index 0 block in the list of blocks
         that make up a shape.
         """
         # TO DO: Refactor for DRY
-        middle = self.blocks[0]
-        rel = []
+        middle = self.blocks[0].coord
+        rel_blocks = []
         for block in self.blocks:
-            rel.append( (block.x-middle.x, block.y-middle.y ) )
+            rel_blocks.append( Coord(block.coord.x-middle.x, block.coord.y-middle.y ) )
             
         # to rotate 90-degrees (x,y) = (-y, x)
         # First check that the there are no collisions or out of bounds moves.
-        for idx in xrange(len(self.blocks)):
-            rel_x, rel_y = rel[idx]
+        for rel in rel_blocks:
             if clockwise:
-                x = middle.x+rel_y
-                y = middle.y-rel_x
+                x = middle.x+rel.y
+                y = middle.y-rel.x
             else:
-                x = middle.x-rel_y
-                y = middle.y+rel_x
+                x = middle.x-rel.y
+                y = middle.y+rel.x
             
-            if not self.board.check_block( (x, y) ):
+            if not self.board.check_block(Coord(x, y)):
                 return False
             
-        for idx in xrange(len(self.blocks)):
-            rel_x, rel_y = rel[idx]
+        for rel, act in zip(rel_blocks, self.blocks):
             if clockwise:
-                x = middle.x+rel_y
-                y = middle.y-rel_x
+                x = middle.x+rel.y
+                y = middle.y-rel.x
             else:
-                x = middle.x-rel_y
-                y = middle.y+rel_x
+                x = middle.x-rel.y
+                y = middle.y+rel.x
+
+            diff_x = x - act.coord.x
+            diff_y = y - act.coord.y
             
+            self.board.move_block( act.id, Coord(diff_x, diff_y) )
             
-            diff_x = x - self.blocks[idx].x 
-            diff_y = y - self.blocks[idx].y 
-            
-            self.board.move_block( self.blocks[idx].id, (diff_x, diff_y) )
-            
-            self.blocks[idx].x = x
-            self.blocks[idx].y = y
-       
+            act.coord = Coord(x, y)
+
         return True
 
 
@@ -378,9 +329,9 @@ class LimitedRotateShape(Shape):
     Instead they toggle between 90 degrees clockwise and then back 90 degrees
     anti-clockwise.
     """
-    def __init__( self, board, coords, colour ):
+    def __init__( self, board, coords, colour, offset ):
         self.clockwise = True
-        super(LimitedRotateShape, self).__init__(board, coords, colour)
+        super(LimitedRotateShape, self).__init__(board, coords, colour, offset)
     
     def rotate(self, clockwise=True):
         """
@@ -392,16 +343,25 @@ class LimitedRotateShape(Shape):
             self.clockwise=False
         else:
             self.clockwise=True
-        
-# All this check_and_create stuff kind of smells - there has to be a better way of doing this.
-
 
 class SquareShape(Shape):
-    @classmethod
-    def check_and_create( cls, board ):
-        coords = [(4,0),(5,0),(4,1),(5,1)]
-        return super(SquareShape, cls).check_and_create(board, coords, "red")
-        
+    """
+      0 1 2 .
+    0 X X
+    1 X X
+    2
+    .
+    """
+    def __init__(self, board, offset=None):
+        """
+        :param board: A TBoard canvas object that the shape is drawn on.
+        :param offset: Offset (x, y) to where the shape is initially drawn
+        """
+        coords = [Coord(0, 0), Coord(0, 1), Coord(1, 0), Coord(1, 1)]
+        super(SquareShape, self).__init__(board, coords, "red", offset)
+
+    HEIGHT = 2
+
     def rotate(self, clockwise=True):
         """
         Override the rotate method for the square shape to do exactly nothing!
@@ -410,46 +370,115 @@ class SquareShape(Shape):
 
 
 class TShape(Shape):
-    @classmethod
-    def check_and_create( cls, board ):
-        coords = [(4,0),(3,0),(5,0),(4,1)]
-        return super(TShape, cls).check_and_create(board, coords, "yellow")
+    """
+      0 1 2 .
+    0 X X X
+    1   X
+    2
+    .
+    """
+    def __init__(self, board, offset=None):
+        """
+        :param board: A TBoard canvas object that the shape is drawn on.
+        :param offset: Offset (x, y) to where the shape is initially drawn
+        """
+        coords = [Coord(1, 0), Coord(0, 0),  Coord(2, 0), Coord(1, 1)]
+        super(TShape, self).__init__(board, coords, "yellow", offset)
 
+    HEIGHT = 2
 
 class LShape(Shape):
-    @classmethod
-    def check_and_create( cls, board ):
-        coords = [(4,0),(3,0),(5,0),(3,1)]
-        return super(LShape, cls).check_and_create(board, coords, "orange")
+    """
+      0 1 2 .
+    0 X
+    1 X
+    2 X X
+    .
+    """
+    def __init__(self, board, offset=None):
+        """
+        Create this shape
+        :param board: A TBoard canvas object that the shape is drawn on.
+        :param offset: Offset (x, y) to where the shape is initially drawn
+        """
+        coords = [ Coord(0, 1), Coord(0, 0),  Coord(0, 2), Coord(1, 2)]
+        super(LShape, self).__init__(board, coords, "orange", offset)
+
+    HEIGHT = 3
 
 
 class JShape(Shape):
-    @classmethod
-    def check_and_create( cls, board ):
-        coords = [(5,0),(4,0),(6,0),(6,1)]
-        return super(JShape, cls).check_and_create(
-            board, coords, "green")
+    """
+      0 1 2 .
+    0   X
+    1   X
+    2 X X
+    .
+    """
+    def __init__(self, board, offset=None):
+        """
+        :param board: A TBoard canvas object that the shape is drawn on.
+        :param offset: Offset (x, y) to where the shape is initially drawn
+        """
+        coords = [ Coord(1, 1), Coord(1, 0),   Coord(0, 2), Coord(1, 2)]
+        super(JShape, self).__init__(board, coords, "green", offset)
+
+    HEIGHT = 3
 
 
 class ZShape(LimitedRotateShape):
-    @classmethod
-    def check_and_create( cls, board ):
-        coords =[(5,0),(4,0),(5,1),(6,1)]
-        return super(ZShape, cls).check_and_create(board, coords, "purple")
-        
+    """
+      0 1 2 3 .
+    0 X X
+    1   X X
+    .
+    """
+    def __init__(self, board, offset=None):
+        """
+        :param board: A TBoard canvas object that the shape is drawn on.
+        :param offset: Offset (x, y) to where the shape is initially drawn
+        """
+        coords = [Coord(1, 0), Coord(0, 0), Coord(1, 1), Coord(2, 1)]
+        super(ZShape, self).__init__(board, coords, "purple", offset)
+
+    HEIGHT = 2
+
 
 class SShape(LimitedRotateShape):
-    @classmethod
-    def check_and_create( cls, board ):
-        coords =[(5,1),(4,1),(5,0),(6,0)]
-        return super(SShape, cls).check_and_create(board, coords, "magenta")
+    """
+      0 1 2 3 .
+    0   X X
+    1 X X
+    .
+    """
+    def __init__(self, board, offset=None):
+        """
+        :param board: A TBoard canvas object that the shape is drawn on.
+        :param offset: Offset (x, y) to where the shape is initially drawn
+        """
+        coords = [Coord(1, 0), Coord(2, 0),  Coord(0, 1), Coord(1, 1)]
+        super(SShape, self).__init__(board, coords, "magenta", offset)
 
+    HEIGHT = 2
 
 class IShape(LimitedRotateShape):
-    @classmethod
-    def check_and_create( cls, board ):
-        coords =[(4,0),(3,0),(5,0),(6,0)]
-        return super(IShape, cls).check_and_create(board, coords, "blue")
+    """
+       0 1 .
+     0 X
+     1 X
+     2 X
+     3 X
+     .
+     """
+    def __init__(self, board, offset=None):
+        """
+        :param board: A TBoard canvas object that the shape is drawn on.
+        :param offset: Offset (x, y) to where the shape is initially drawn
+        """
+        coords = [Coord(0, 1), Coord(0, 0),   Coord(0, 2), Coord(0, 3)]
+        super(IShape, self).__init__(board, coords, "blue", offset)
+
+    HEIGHT = 4
 
 WID = 10
 
@@ -545,6 +574,7 @@ class InfoPanel(Frame):
             self.new_game_bttn.config(state=NORMAL)
         else:
             self.new_game_bttn.config(state=DISABLED)
+
 
 class game_controller(object):
     """
@@ -647,10 +677,6 @@ class game_controller(object):
                     self.info_panel.update_level(self.level)
                     self.delay-=100
                     
-                # self.status_bar.set("Score: %-7d\t Level: %d " % (
-                #     self.score, self.level+1)
-                # )
-                
                 # Signal that the shape has 'landed'
                 return False
         return True
@@ -698,8 +724,8 @@ class game_controller(object):
         """
         Randomly select which tetrominoe will be used next.
         """
-        the_shape = self.shapes[ randint(0,len(self.shapes)-1) ]
-        return the_shape.check_and_create(self.board)
+        the_shape = self.shapes[ randint(0, len(self.shapes)-1) ]
+        return the_shape(self.board, offset=Coord(3, 0-the_shape.HEIGHT))
 
     def quit_fn(self):
         self.parent.quit()
