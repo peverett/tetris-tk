@@ -57,6 +57,7 @@ def level_thresholds( first_level, no_of_levels ):
     
     return thresholds
 
+
 class TBoard(Frame):
     """
     A Frame containing a Canvas, on which blocks can be displayed, moved and deleted, at will. A block is just a Canvas
@@ -327,6 +328,10 @@ class Shape(object):
 
         return True
 
+    # def __del__(self):
+    #     for block in self.blocks:
+    #         self.board.delete_block(block.id)
+
 
 class LimitedRotateShape(Shape):
     """
@@ -367,6 +372,7 @@ class SquareShape(Shape):
         super(SquareShape, self).__init__(board, coords, "red", offset)
 
     HEIGHT = 2
+    WIDTH =2
 
     def rotate(self, clockwise=True):
         """
@@ -392,6 +398,7 @@ class TShape(Shape):
         super(TShape, self).__init__(board, coords, "yellow", offset)
 
     HEIGHT = 2
+    WIDTH = 3
 
 class LShape(Shape):
     """
@@ -411,6 +418,7 @@ class LShape(Shape):
         super(LShape, self).__init__(board, coords, "orange", offset)
 
     HEIGHT = 3
+    WIDTH = 2
 
 
 class JShape(Shape):
@@ -430,6 +438,7 @@ class JShape(Shape):
         super(JShape, self).__init__(board, coords, "green", offset)
 
     HEIGHT = 3
+    WIDTH = 2
 
 
 class ZShape(LimitedRotateShape):
@@ -448,7 +457,8 @@ class ZShape(LimitedRotateShape):
         coords = [Coord(0, 1), Coord(1, 0), Coord(1, 1), Coord(0, 2)]
         super(ZShape, self).__init__(board, coords, "purple", offset)
 
-    HEIGHT = 2
+    HEIGHT = 3
+    WIDTH = 2
 
 
 class SShape(LimitedRotateShape):
@@ -467,7 +477,8 @@ class SShape(LimitedRotateShape):
         coords = [Coord(0, 1), Coord(0, 0), Coord(1, 1), Coord(1, 2)]
         super(SShape, self).__init__(board, coords, "cyan", offset)
 
-    HEIGHT = 2
+    HEIGHT = 3
+    WIDTH = 2
 
 class IShape(LimitedRotateShape):
     """
@@ -487,6 +498,7 @@ class IShape(LimitedRotateShape):
         super(IShape, self).__init__(board, coords, "blue", offset)
 
     HEIGHT = 4
+    WIDTH = 1
 
 WID = 10
 
@@ -525,15 +537,8 @@ class InfoPanel(Frame):
         level_lbl = Label(slf, bd=5, relief=SUNKEN, anchor=E, textvariable=self.level_var, width=10)
         level_lbl.grid(column=1, row=1)
 
-        preview_frame = LabelFrame(self, text="Preview", padx=5, pady=5)
-        preview = Canvas(
-            preview_frame,
-            width=(SCALE * 4) + OFFSET,
-            height=(SCALE * 4) + OFFSET,
-            bg="black",
-            )
-        preview.pack()
-        preview_frame.pack(fill=X)
+        self.preview = TBoard(self, scale=SCALE, max_x=4, max_y=4, offset=OFFSET)
+        self.preview.pack()
 
         ctrl_frame = LabelFrame(self, text="Controls", padx=5, pady=5)
         ctrl_frame.pack(side=TOP, fill=X)
@@ -641,17 +646,20 @@ class game_controller(object):
         self.state = READY
         self.info_panel.update_state(self.state)
         # must press 'New Game' to start.
-        self.shape = self.get_next_shape()
         #self.board.output()
         self.after_id = None
+        self.next_shape = None
+        self.preview_shape = None
+        self.shape = None
 
     def new_game_fn(self):
         self.state = PLAYING
         self.info_panel.update_state(self.state)
         self.score = 0
         self.level = 0
+        self.get_preview_shape()
+        self.shape = self.get_next_shape()
         self.after_id = self.parent.after(self.delay, self.move_my_shape)
-
 
     def handle_move(self, direction):
         # if you can't move then you've hit something
@@ -692,29 +700,29 @@ class game_controller(object):
         return True
 
     def left_callback( self, event ):
-        if self.shape:
+        if self.state in PLAYING and self.shape:
             self.handle_move( LEFT )
         
     def right_callback( self, event ):
-        if self.shape:
+        if self.state in PLAYING and self.shape:
             self.handle_move( RIGHT )
 
     def up_callback( self, event ):
-        if self.shape:
+        if self.state in PLAYING and self.shape:
             # drop the tetrominoe to the bottom
             while self.handle_move( DOWN ):
                 pass
 
     def down_callback( self, event ):
-        if self.shape:
+        if self.state in PLAYING and self.shape:
             self.handle_move( DOWN )
             
     def a_callback( self, event):
-        if self.shape:
+        if self.state in PLAYING and self.shape:
             self.shape.rotate(clockwise=True)
             
     def s_callback( self, event):
-        if self.shape:
+        if self.state in PLAYING and self.shape:
             self.shape.rotate(clockwise=False)
         
     def p_callback(self, event):
@@ -729,16 +737,29 @@ class game_controller(object):
             self.after_id = self.parent.after(self.delay, self.move_my_shape)
 
     def move_my_shape( self ):
-        if self.shape:
+        if self.state in PLAYING and self.shape:
             self.handle_move( DOWN )
             self.after_id = self.parent.after( self.delay, self.move_my_shape )
-        
+
+    def get_preview_shape(self):
+        """Randomly select a tetromino and put it in the preview window"""
+        self.next_shape = self.shapes[randint(0, len(self.shapes)-1)]
+        self.preview_shape = self.next_shape(
+            self.info_panel.preview,
+            offset=Coord(2-self.next_shape.WIDTH/2, 2-self.next_shape.HEIGHT/2)
+        )
+
     def get_next_shape( self ):
         """
-        Randomly select which tetrominoe will be used next.
+        Draw the next shape on the game board so it is in play and return its ref.
+        Delete the previous preview shape and get a new one, display it in the preview box.
         """
-        the_shape = self.shapes[ randint(0, len(self.shapes)-1) ]
-        return the_shape(self.board, offset=Coord(3, 0-the_shape.HEIGHT))
+        this_shape = self.next_shape(self.board, offset=Coord(4, 0-self.next_shape.HEIGHT))
+        for block in self.preview_shape.blocks:
+            self.info_panel.preview.delete_block(block.id)
+        del self.preview_shape
+        self.get_preview_shape()
+        return this_shape
 
     def quit_fn(self):
         self.parent.quit()
