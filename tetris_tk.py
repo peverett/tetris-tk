@@ -435,8 +435,9 @@ class JShape(Shape):
 class ZShape(LimitedRotateShape):
     """
       0 1 2 3 .
-    0 X X
-    1   X X
+    0   X
+    1 X X
+    2 X
     .
     """
     def __init__(self, board, offset=None):
@@ -444,7 +445,7 @@ class ZShape(LimitedRotateShape):
         :param board: A TBoard canvas object that the shape is drawn on.
         :param offset: Offset (x, y) to where the shape is initially drawn
         """
-        coords = [Coord(1, 0), Coord(0, 0), Coord(1, 1), Coord(2, 1)]
+        coords = [Coord(0, 1), Coord(1, 0), Coord(1, 1), Coord(0, 2)]
         super(ZShape, self).__init__(board, coords, "purple", offset)
 
     HEIGHT = 2
@@ -453,8 +454,9 @@ class ZShape(LimitedRotateShape):
 class SShape(LimitedRotateShape):
     """
       0 1 2 3 .
-    0   X X
+    0 X
     1 X X
+    2   X
     .
     """
     def __init__(self, board, offset=None):
@@ -462,8 +464,8 @@ class SShape(LimitedRotateShape):
         :param board: A TBoard canvas object that the shape is drawn on.
         :param offset: Offset (x, y) to where the shape is initially drawn
         """
-        coords = [Coord(1, 0), Coord(2, 0),  Coord(0, 1), Coord(1, 1)]
-        super(SShape, self).__init__(board, coords, "magenta", offset)
+        coords = [Coord(0, 1), Coord(0, 0), Coord(1, 1), Coord(1, 2)]
+        super(SShape, self).__init__(board, coords, "cyan", offset)
 
     HEIGHT = 2
 
