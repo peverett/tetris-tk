@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+
+# NOTE TO SELF - SMALLER COMMITS NEXT TIME
+# GAME LOGIC AND PREVIEW PANEL
+# COORD CLASS WITH ADD SUBTRACT EQUALS (possibly)
+
+
 """
 Tetris Tk - A tetris clone written in Python using the Tkinter GUI library.
 
@@ -635,6 +641,7 @@ class game_controller(object):
         # must press 'New Game' to start.
         self.shape = self.get_next_shape()
         #self.board.output()
+        self.after_id = None
 
     def new_game_fn(self):
         self.state = PLAYING
@@ -642,6 +649,7 @@ class game_controller(object):
         self.score = 0
         self.level = 0
         self.after_id = self.parent.after(self.delay, self.move_my_shape)
+
 
     def handle_move(self, direction):
         # if you can't move then you've hit something
@@ -708,13 +716,16 @@ class game_controller(object):
             self.shape.rotate(clockwise=False)
         
     def p_callback(self, event):
-        self.parent.after_cancel( self.after_id )
-        tkMessageBox.askquestion(
-            title = "Paused!",
-            message="Continue?",
-            type=tkMessageBox.OK)
-        self.after_id = self.parent.after( self.delay, self.move_my_shape )
-    
+        """Pause play"""
+        if self.state in PLAYING:
+            self.parent.after_cancel(self.after_id)
+            self.state = PAUSED
+            self.info_panel.update_state(self.state)
+        elif self.state in PAUSED:
+            self.state = PLAYING
+            self.info_panel.update_state(self.state)
+            self.after_id = self.parent.after(self.delay, self.move_my_shape)
+
     def move_my_shape( self ):
         if self.shape:
             self.handle_move( DOWN )
