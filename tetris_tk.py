@@ -152,6 +152,19 @@ class TetrisBoard(TBoard):
             self.delete_block(block)
             del block
 
+    def game_over_animation(self):
+        """
+        Something cool to show the game is over. Start by deleting blocks, but slowly until all gone.
+        :return: True if Block popped, otherwise False.
+        """
+        try:
+            coord, block = self.landed.popitem()
+            self.delete_block(block)
+            del block
+            return True
+        except KeyError:
+            return False
+
     def is_game_over(self):
         """
         Check row -1, if there are any blocks then that means that no new
@@ -670,6 +683,7 @@ class game_controller(object):
         self.shape = None
 
     def new_game_fn(self):
+        self.delay = 1000    #ms
         self.board.reset()
 
         # TODO: DRY
@@ -754,7 +768,12 @@ class game_controller(object):
             self.handle_move( DOWN )
             if self.state == PLAYING:
                 self.after_id = self.parent.after( self.delay, self.move_my_shape )
-            # Otherwise the game is over or paused, or possibly not even started.
+            elif self.state == GAME_OVER:
+                self.after_id = self.parent.after(100, self.do_animation)
+
+    def do_animation(self):
+        if self.board.game_over_animation():
+            self.after_id = self.parent.after(50, self.do_animation)
 
     def get_preview_shape(self):
         """Randomly select a tetromino and put it in the preview window"""
