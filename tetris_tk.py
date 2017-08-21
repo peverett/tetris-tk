@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-# TODO: Game over logic
 # TODO: COORD CLASS WITH ADD SUBTRACT EQUALS (possibly)
 # TODO: Whole file PEP8 coding style
 # TODO: TBoard that centres the shape exactly
@@ -142,6 +141,29 @@ class TetrisBoard(TBoard):
         """
         TBoard.__init__(self, parent, scale, max_x, max_y, offset)
         self.landed = {}
+
+    def reset(self):
+        """
+        Reset the board by clearing all the blocks from a previous game.
+        :return:
+        """
+        for coord in self.landed.keys():
+            block = self.landed.pop(coord)
+            self.delete_block(block)
+            del block
+
+    def is_game_over(self):
+        """
+        Check row -1, if there are any blocks then that means that no new
+        tetrominos can be generated and the game is over.
+        :return: True if blocks are found and game is over, otherwise False.
+        """
+        y = -1
+        for x in xrange(self.max_x):
+            if self.landed.get(Coord(x, y), None):
+                # Found a block, so return True, game over
+                return True
+        return False
 
     def check_for_complete_row( self, blocks ):
         """
@@ -648,6 +670,13 @@ class game_controller(object):
         self.shape = None
 
     def new_game_fn(self):
+        self.board.reset()
+
+        # TODO: DRY
+        if self.preview_shape:
+            for block in self.preview_shape.blocks:
+                self.info_panel.preview.delete_block(block.id)
+
         self.state = PLAYING
         self.info_panel.update_state(self.state)
         self.score = 0
@@ -659,7 +688,6 @@ class game_controller(object):
     def handle_move(self, direction):
         # if you can't move then you've hit something
         if not self.shape.move( direction ):
-            
             # if your heading down then the shape has 'landed'
             if direction == DOWN:
                 self.score += self.board.check_for_complete_row(
@@ -669,23 +697,13 @@ class game_controller(object):
                 del self.shape
                 self.shape = self.get_next_shape()
 
-                # TODO: Check is there room on the top line for the new shape!
-                # If the shape returned is None, then this indicates that
-                # that the check before creating it failed and the
-                # game is over!
-                if self.shape is None:
-                    tkMessageBox.showwarning(
-                        title="GAME OVER",
-                        message ="Score: %7d\tLevel: %d\t" % (
-                            self.score, self.level),
-                        parent=self.parent
-                        )
-                    Toplevel().destroy()
-                    self.parent.destroy()
-                    sys.exit(0)
-                
-                # do we go up a level?
-                if self.level < NO_OF_LEVELS and self.score >= self.thresholds[ self.level]:
+                # If there is no more room, the game is over
+                if self.board.is_game_over():
+                    self.parent.after_cancel(self.after_id)
+                    self.state = GAME_OVER
+                    self.info_panel.update_state(self.state)
+                # or do we go up a level!
+                elif self.level < NO_OF_LEVELS and self.score >= self.thresholds[ self.level]:
                     self.level+=1
                     self.info_panel.update_level(self.level)
                     self.delay-=100
@@ -734,7 +752,9 @@ class game_controller(object):
     def move_my_shape( self ):
         if self.state in PLAYING and self.shape:
             self.handle_move( DOWN )
-            self.after_id = self.parent.after( self.delay, self.move_my_shape )
+            if self.state == PLAYING:
+                self.after_id = self.parent.after( self.delay, self.move_my_shape )
+            # Otherwise the game is over or paused, or possibly not even started.
 
     def get_preview_shape(self):
         """Randomly select a tetromino and put it in the preview window"""
