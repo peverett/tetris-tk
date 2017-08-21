@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-# NOTE TO SELF - SMALLER COMMITS NEXT TIME
-# GAME LOGIC AND PREVIEW PANEL
-# COORD CLASS WITH ADD SUBTRACT EQUALS (possibly)
-
+# TODO: Game over logic
+# TODO: COORD CLASS WITH ADD SUBTRACT EQUALS (possibly)
+# TODO: Whole file PEP8 coding style
+# TODO: TBoard that centres the shape exactly
+# TODO: Add version and Author vars
+# TODO: Doesn't clear to the top line.
 
 """
 Tetris Tk - A tetris clone written in Python using the Tkinter GUI library.
@@ -45,6 +47,7 @@ PAUSED = "PAUSED"
 PLAYING = "PLAYING"
 
 Coord = namedtuple("Coord", ['x', 'y'])
+
 
 def level_thresholds( first_level, no_of_levels ):
     """
@@ -611,14 +614,6 @@ class game_controller(object):
         
         self.thresholds = level_thresholds( 500, NO_OF_LEVELS )
         
-        # self.status_bar = status_bar( parent )
-        # self.status_bar.pack(side=TOP,fill=X)
-        # #print "Status bar width",self.status_bar.cget("width")
-        #
-        # self.status_bar.set("Score: %-7d\t Level: %d " % (
-        #     self.score, self.level+1)
-        # )
-        
         self.board = TetrisBoard(
             parent,
             scale=SCALE,
@@ -673,7 +668,8 @@ class game_controller(object):
                 self.info_panel.update_score(self.score)
                 del self.shape
                 self.shape = self.get_next_shape()
-                
+
+                # TODO: Check is there room on the top line for the new shape!
                 # If the shape returned is None, then this indicates that
                 # that the check before creating it failed and the
                 # game is over!
@@ -689,8 +685,7 @@ class game_controller(object):
                     sys.exit(0)
                 
                 # do we go up a level?
-                if (self.level < NO_OF_LEVELS and 
-                    self.score >= self.thresholds[ self.level]):
+                if self.level < NO_OF_LEVELS and self.score >= self.thresholds[ self.level]:
                     self.level+=1
                     self.info_panel.update_level(self.level)
                     self.delay-=100
