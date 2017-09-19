@@ -1,29 +1,49 @@
 #!/usr/bin/env python
-
 # TODO: COORD CLASS WITH ADD SUBTRACT EQUALS (possibly)
+# TODO: Walk kick on rotation
 # TODO: Whole file PEP8 coding style
 # TODO: TBoard that centres the shape exactly
 # TODO: Add version and Author vars
-# TODO: Doesn't clear to the top line.
+# TODO: Bug - Doesn't clear to the top line.
+# TODO: Traditional scoring.
+# TODO: Model View Controller
 
-"""
-Tetris Tk - A tetris clone written in Python using the Tkinter GUI library.
+"""Tetris Tk - A Tetris clone written in Python using the Tkinter GUI library.
+
+Tetris was originally designed and coded by Alexey Pajitnov, release in June 6
+1984, and originally published by Spectrum HoloByte for the Commadore 64 and
+IBM PC. See https://en.wikipedia.org/wiki/Tetris.
+
+Gameplay features implemented in this version:
+    * Scoring:
+        * 100 per line
+        * 800 for a Tetris (4-rows in one go)
+        * 1200 for a Tetris immediately following another Tetris, each.
+    * Gravity: Traditional setting e.g. floating blocks over a gap.
+    * Easy spin: nope - specifically designed to avoid this 'feature'.
+    * Wall kick on rotation: Rotating a Tetronimoe next to the left or right
+      will move the piece away from the side, if that is possible, to allow
+      rotation.
+    * Soft drop: Increase the speed of a dropping Tetrominoe.
+    * Hard drop: Instantly drop to the bottom a Tetrominoe.
 
 Controls:
     Left Arrow      Move left
     Right Arrow     Move right
-    Down Arrow      Move down
-    Up Arrow        Drop Tetronimoe to the bottom
+    Down Arrow      Move down (soft drop)
+    Up Arrow        Drop Tetrominoe to the bottom (hard drop)
     'a'             Rotate anti-clockwise (to the left)
     'b'             Rotate clockwise (to the right)
     'p'             Pause the game.
 """
 
-from Tkinter import *
+__version__ = "2.0"
+__author__ = "simon.peveret@gmail.com"
+__all__ = ['__version__', '__author__']
+
 import tkFont
+from Tkinter import *
 from random import randint
-import tkMessageBox
-import sys
 from collections import namedtuple
 
 SCALE = 30
