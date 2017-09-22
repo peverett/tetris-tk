@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # TODO: COORD CLASS WITH ADD SUBTRACT EQUALS (possibly)
 # TODO: Walk kick on rotation
-# TODO: Whole file PEP8 coding style
 # TODO: TBoard that centres the shape exactly
-# TODO: Add version and Author vars
 # TODO: Bug - Doesn't clear to the top line.
 # TODO: Traditional scoring.
 # TODO: Model View Controller
@@ -57,7 +55,7 @@ LEFT = "left"
 RIGHT = "right"
 DOWN = "down"
 
-direction_d = { "left": (-1, 0), "right": (1, 0), "down": (0, 1) }
+direction_d = {"left": (-1, 0), "right": (1, 0), "down": (0, 1)}
 
 # Game States
 READY = "READY"
@@ -68,14 +66,14 @@ PLAYING = "PLAYING"
 Coord = namedtuple("Coord", ['x', 'y'])
 
 
-def level_thresholds( first_level, no_of_levels ):
+def level_thresholds(first_level, no_of_levels):
     """
     Calculates the score at which the level will change, for n levels.
     """
-    thresholds =[]
-    for x in xrange( no_of_levels ):
+    thresholds = []
+    for x in xrange(no_of_levels):
         multiplier = 2**x
-        thresholds.append( first_level * multiplier )
+        thresholds.append(first_level * multiplier)
     
     return thresholds
 
@@ -117,8 +115,7 @@ class TBoard(Frame):
             """
             Add a block (rectangle of size (1 * SCALE)**2)
             :param self: instance
-            :param x: Coordinate
-            :param y: Coordinate
+            :param coord: X, Y Coordinate point
             :param colour: Block colour
             :return: The Tkinter ID of the block (rectangle) on the canvas.
             """
@@ -132,8 +129,7 @@ class TBoard(Frame):
             Move a block by relative x, y coordinate distance.
             :param self: instance
             :param id: Canvas id of the block (rectangle)
-            :param x: relative X coordinate distance to move
-            :param y: relative Y coordinate distance to move
+            :param coord: X, Y Coordinate to move to, relative to the current block position.
             """
             self.canvas.move(id, coord.x * self.scale, coord.y * self.scale)
 
@@ -198,7 +194,7 @@ class TetrisBoard(TBoard):
                 return True
         return False
 
-    def check_for_complete_row( self, blocks ):
+    def check_for_complete_row(self, blocks):
         """
         Look for a complete row of blocks, from the bottom up until the top row
         or until an empty row is reached.
@@ -213,12 +209,12 @@ class TetrisBoard(TBoard):
         empty_row = 0
 
         # find the first empty row
-        for y in xrange(self.max_y -1, -1, -1):
+        for y in xrange(self.max_y - 1, -1, -1):
             row_is_empty = True
             for x in xrange(self.max_x):
                 if self.landed.get(Coord(x, y), None):
                     row_is_empty = False
-                    break;
+                    break
             if row_is_empty:
                 empty_row = y
                 break
@@ -231,43 +227,41 @@ class TetrisBoard(TBoard):
             for x in xrange(self.max_x):
                 if self.landed.get(Coord(x, y), None) is None:
                     complete_row = False
-                    break;
+                    break
 
             if complete_row:
                 rows_deleted += 1
                 
-                #delete the completed row
+                # delete the completed row
                 for x in xrange(self.max_x):
                     block = self.landed.pop(Coord(x, y))
                     self.delete_block(block)
                     del block
 
-                    
                 # move all the rows above it down
                 for ay in xrange(y-1, empty_row, -1):
                     for x in xrange(self.max_x):
                         block = self.landed.get(Coord(x, ay), None)
                         if block:
                             block = self.landed.pop(Coord(x, ay))
-                            dx,dy = direction_d[DOWN]
+                            dx, dy = direction_d[DOWN]
 
                             tx, ty = direction_d[DOWN]   # FIX THIS
                             self.move_block(block, Coord(tx, ty))
                             self.landed[Coord(x+dx, ay+dy)] = block
 
                 # move the empty row down index down too
-                empty_row +=1
+                empty_row += 1
                 # y stays same as row above has moved down.
                 
             else:
                 y -= 1
                 
-        #self.output() # non-gui diagnostic
-        
-        # return the score, calculated by the number of rows deleted.        
+        # self.output() # non-gui diagnostic
+        # return the score, calculated by the number of rows deleted.
         return (100 * rows_deleted) * rows_deleted
 
-    def output( self ):
+    def output(self):
         for y in xrange(self.max_y):
             line = []
             for x in xrange(self.max_x):
@@ -285,7 +279,7 @@ class TetrisBoard(TBoard):
         """
         if coord.x < 0 or coord.x >= self.max_x or coord.y >= self.max_y:
             return False
-        elif self.landed.has_key(coord):
+        elif coord in self.landed:
             return False
         else:
             return True
@@ -293,7 +287,7 @@ class TetrisBoard(TBoard):
 
 class Block(object):
     # This could be replaced with a named tuple
-    def __init__( self, id, coord):
+    def __init__(self, id, coord):
         self.id = id
         self.coord = coord
 
@@ -318,7 +312,7 @@ class Shape(object):
             
             self.blocks.append(block)
             
-    def move( self, direction ):
+    def move(self, direction):
         """
         Move the blocks in the direction indicated by adding (dx, dy) to the
         current block coordinates
@@ -354,7 +348,7 @@ class Shape(object):
         middle = self.blocks[0].coord
         rel_blocks = []
         for block in self.blocks:
-            rel_blocks.append( Coord(block.coord.x-middle.x, block.coord.y-middle.y ) )
+            rel_blocks.append(Coord(block.coord.x-middle.x, block.coord.y-middle.y))
             
         # to rotate 90-degrees (x,y) = (-y, x)
         # First check that the there are no collisions or out of bounds moves.
@@ -380,7 +374,7 @@ class Shape(object):
             diff_x = x - act.coord.x
             diff_y = y - act.coord.y
             
-            self.board.move_block( act.id, Coord(diff_x, diff_y) )
+            self.board.move_block(act.id, Coord(diff_x, diff_y))
             
             act.coord = Coord(x, y)
 
@@ -398,7 +392,7 @@ class LimitedRotateShape(Shape):
     Instead they toggle between 90 degrees clockwise and then back 90 degrees
     anti-clockwise.
     """
-    def __init__( self, board, coords, colour, offset ):
+    def __init__(self, board, coords, colour, offset):
         self.clockwise = True
         super(LimitedRotateShape, self).__init__(board, coords, colour, offset)
     
@@ -409,9 +403,10 @@ class LimitedRotateShape(Shape):
         """
         super(LimitedRotateShape, self).rotate(clockwise=self.clockwise)
         if self.clockwise:
-            self.clockwise=False
+            self.clockwise = False
         else:
-            self.clockwise=True
+            self.clockwise = True
+
 
 class SquareShape(Shape):
     """
@@ -430,7 +425,7 @@ class SquareShape(Shape):
         super(SquareShape, self).__init__(board, coords, "red", offset)
 
     HEIGHT = 2
-    WIDTH =2
+    WIDTH = 2
 
     def rotate(self, clockwise=True):
         """
@@ -458,6 +453,7 @@ class TShape(Shape):
     HEIGHT = 2
     WIDTH = 3
 
+
 class LShape(Shape):
     """
       0 1 2 .
@@ -472,7 +468,7 @@ class LShape(Shape):
         :param board: A TBoard canvas object that the shape is drawn on.
         :param offset: Offset (x, y) to where the shape is initially drawn
         """
-        coords = [ Coord(0, 1), Coord(0, 0),  Coord(0, 2), Coord(1, 2)]
+        coords = [Coord(0, 1), Coord(0, 0),  Coord(0, 2), Coord(1, 2)]
         super(LShape, self).__init__(board, coords, "orange", offset)
 
     HEIGHT = 3
@@ -492,7 +488,7 @@ class JShape(Shape):
         :param board: A TBoard canvas object that the shape is drawn on.
         :param offset: Offset (x, y) to where the shape is initially drawn
         """
-        coords = [ Coord(1, 1), Coord(1, 0),   Coord(0, 2), Coord(1, 2)]
+        coords = [Coord(1, 1), Coord(1, 0),   Coord(0, 2), Coord(1, 2)]
         super(JShape, self).__init__(board, coords, "green", offset)
 
     HEIGHT = 3
@@ -538,6 +534,7 @@ class SShape(LimitedRotateShape):
     HEIGHT = 3
     WIDTH = 2
 
+
 class IShape(LimitedRotateShape):
     """
        0 1 .
@@ -558,14 +555,12 @@ class IShape(LimitedRotateShape):
     HEIGHT = 4
     WIDTH = 1
 
-WID = 10
-
 
 class InfoPanel(Frame):
     """The info panel has a grid layout manager and displays the following game info:
     * The score
     * The level
-    * Preview panel - next tetrominoe.
+    * Preview panel - next Tetrominoe.
     * keyboard controls
     * Quit button
     * New game button
@@ -604,7 +599,7 @@ class InfoPanel(Frame):
         Label(ctrl_frame, text="Pause:", anchor=W, justify=LEFT, width=8).grid(column=0, row=0, columnspan=2)
         Label(ctrl_frame, text="P", width=5, relief=GROOVE).grid(column=2, row=0)
 
-        Label(ctrl_frame, text="   ").grid(column=2, row=1) # blank line
+        Label(ctrl_frame, text="   ").grid(column=2, row=1)  # blank line
 
         Label(ctrl_frame, text="Drop:", anchor=W, justify=LEFT, width=8).grid(column=0, row=2, columnspan=2)
         Label(ctrl_frame, text="^", width=5, relief=GROOVE).grid(column=3, row=2)
@@ -630,7 +625,7 @@ class InfoPanel(Frame):
         btn_frame.pack(side=BOTTOM, fill=X)
         self.new_game_bttn = Button(btn_frame, text="New Game", padx=5, pady=5, command=new_game_fn)
         self.new_game_bttn.pack(side=BOTTOM, fill=X)
-        self.quit_bttn = Button(btn_frame, text = "Quit", padx=5, pady=5, command=quit_fn)
+        self.quit_bttn = Button(btn_frame, text="Quit", padx=5, pady=5, command=quit_fn)
         self.quit_bttn.pack(side=TOP, fill=X)
 
     def update_score(self, score):
@@ -647,7 +642,7 @@ class InfoPanel(Frame):
             self.new_game_bttn.config(state=DISABLED)
 
 
-class game_controller(object):
+class GameController(object):
     """
     Main game loop and receives GUI callback events for keypresses etc...
     """
@@ -656,7 +651,7 @@ class game_controller(object):
         Intialise the game...
         """
         self.parent = parent
-        self.delay = 1000    #ms
+        self.delay = 1000    # ms
         
         # lookup table
         self.shapes = [SquareShape,
@@ -667,7 +662,7 @@ class game_controller(object):
                        SShape,
                        IShape]
         
-        self.thresholds = level_thresholds( 500, NO_OF_LEVELS )
+        self.thresholds = level_thresholds(500, NO_OF_LEVELS)
         
         self.board = TetrisBoard(
             parent,
@@ -696,14 +691,14 @@ class game_controller(object):
         self.state = READY
         self.info_panel.update_state(self.state)
         # must press 'New Game' to start.
-        #self.board.output()
+        # self.board.output()
         self.after_id = None
         self.next_shape = None
         self.preview_shape = None
         self.shape = None
 
     def new_game_fn(self):
-        self.delay = 1000    #ms
+        self.delay = 1000    # ms
         self.board.reset()
 
         # TODO: DRY
@@ -721,7 +716,7 @@ class game_controller(object):
 
     def handle_move(self, direction):
         # if you can't move then you've hit something
-        if not self.shape.move( direction ):
+        if not self.shape.move(direction):
             # if your heading down then the shape has 'landed'
             if direction == DOWN:
                 self.score += self.board.check_for_complete_row(
@@ -737,38 +732,38 @@ class game_controller(object):
                     self.state = GAME_OVER
                     self.info_panel.update_state(self.state)
                 # or do we go up a level!
-                elif self.level < NO_OF_LEVELS and self.score >= self.thresholds[ self.level]:
-                    self.level+=1
+                elif self.level < NO_OF_LEVELS and self.score >= self.thresholds[self.level]:
+                    self.level += 1
                     self.info_panel.update_level(self.level)
-                    self.delay-=100
+                    self.delay -= 100
                     
                 # Signal that the shape has 'landed'
                 return False
         return True
 
-    def left_callback( self, event ):
+    def left_callback(self, event):
         if self.state in PLAYING and self.shape:
-            self.handle_move( LEFT )
+            self.handle_move(LEFT)
         
-    def right_callback( self, event ):
+    def right_callback(self, event):
         if self.state in PLAYING and self.shape:
-            self.handle_move( RIGHT )
+            self.handle_move(RIGHT)
 
-    def up_callback( self, event ):
+    def up_callback(self, event):
         if self.state in PLAYING and self.shape:
             # drop the tetrominoe to the bottom
-            while self.handle_move( DOWN ):
+            while self.handle_move(DOWN):
                 pass
 
-    def down_callback( self, event ):
+    def down_callback(self, event):
         if self.state in PLAYING and self.shape:
-            self.handle_move( DOWN )
+            self.handle_move(DOWN)
             
-    def a_callback( self, event):
+    def a_callback(self, event):
         if self.state in PLAYING and self.shape:
             self.shape.rotate(clockwise=True)
             
-    def s_callback( self, event):
+    def s_callback(self, event):
         if self.state in PLAYING and self.shape:
             self.shape.rotate(clockwise=False)
         
@@ -783,11 +778,11 @@ class game_controller(object):
             self.info_panel.update_state(self.state)
             self.after_id = self.parent.after(self.delay, self.move_my_shape)
 
-    def move_my_shape( self ):
+    def move_my_shape(self):
         if self.state in PLAYING and self.shape:
-            self.handle_move( DOWN )
+            self.handle_move(DOWN)
             if self.state == PLAYING:
-                self.after_id = self.parent.after( self.delay, self.move_my_shape )
+                self.after_id = self.parent.after(self.delay, self.move_my_shape)
             elif self.state == GAME_OVER:
                 self.after_id = self.parent.after(100, self.do_animation)
 
@@ -796,14 +791,14 @@ class game_controller(object):
             self.after_id = self.parent.after(50, self.do_animation)
 
     def get_preview_shape(self):
-        """Randomly select a tetromino and put it in the preview window"""
+        """Randomly select a tetrominoe and put it in the preview window"""
         self.next_shape = self.shapes[randint(0, len(self.shapes)-1)]
         self.preview_shape = self.next_shape(
             self.info_panel.preview,
             offset=Coord(2-self.next_shape.WIDTH/2, 2-self.next_shape.HEIGHT/2)
         )
 
-    def get_next_shape( self ):
+    def get_next_shape(self):
         """
         Draw the next shape on the game board so it is in play and return its ref.
         Delete the previous preview shape and get a new one, display it in the preview box.
@@ -822,6 +817,6 @@ class game_controller(object):
 if __name__ == "__main__":
     root = Tk()
     root.title("Tetris Tk")
-    theGame = game_controller( root )
+    theGame = GameController(root)
     
     root.mainloop()
