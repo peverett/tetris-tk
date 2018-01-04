@@ -34,17 +34,23 @@ Controls:
     'b'             Rotate clockwise (to the right)
     'p'             Pause the game.
 """
+from __future__ import print_function
 
 __version__ = "2.0"
 __author__ = "simon.peveret@gmail.com"
 __all__ = ['__version__', '__author__']
 
-import tkFont
-from Tkinter import *
+import sys
+if sys.version_info[0] > 2:
+    import tkinter.font as tkFont
+    from tkinter import *
+else:
+    import tkFont
+    from Tkinter import *
 from random import randint
 from collections import namedtuple
 
-SCALE = 30
+SCALE = 20
 OFFSET = 3
 MAXX = 10
 MAXY = 22
@@ -71,7 +77,7 @@ def level_thresholds(first_level, no_of_levels):
     Calculates the score at which the level will change, for n levels.
     """
     thresholds = []
-    for x in xrange(no_of_levels):
+    for x in range(no_of_levels):
         multiplier = 2**x
         thresholds.append(first_level * multiplier)
     
@@ -188,7 +194,7 @@ class TetrisBoard(TBoard):
         :return: True if blocks are found and game is over, otherwise False.
         """
         y = -1
-        for x in xrange(self.max_x):
+        for x in range(self.max_x):
             if self.landed.get(Coord(x, y), None):
                 # Found a block, so return True, game over
                 return True
@@ -209,9 +215,9 @@ class TetrisBoard(TBoard):
         empty_row = 0
 
         # find the first empty row
-        for y in xrange(self.max_y - 1, -1, -1):
+        for y in range(self.max_y - 1, -1, -1):
             row_is_empty = True
-            for x in xrange(self.max_x):
+            for x in range(self.max_x):
                 if self.landed.get(Coord(x, y), None):
                     row_is_empty = False
                     break
@@ -224,7 +230,7 @@ class TetrisBoard(TBoard):
         while y > empty_row:
  
             complete_row = True
-            for x in xrange(self.max_x):
+            for x in range(self.max_x):
                 if self.landed.get(Coord(x, y), None) is None:
                     complete_row = False
                     break
@@ -233,14 +239,14 @@ class TetrisBoard(TBoard):
                 rows_deleted += 1
                 
                 # delete the completed row
-                for x in xrange(self.max_x):
+                for x in range(self.max_x):
                     block = self.landed.pop(Coord(x, y))
                     self.delete_block(block)
                     del block
 
                 # move all the rows above it down
-                for ay in xrange(y-1, empty_row, -1):
-                    for x in xrange(self.max_x):
+                for ay in range(y-1, empty_row, -1):
+                    for x in range(self.max_x):
                         block = self.landed.get(Coord(x, ay), None)
                         if block:
                             block = self.landed.pop(Coord(x, ay))
@@ -262,14 +268,14 @@ class TetrisBoard(TBoard):
         return (100 * rows_deleted) * rows_deleted
 
     def output(self):
-        for y in xrange(self.max_y):
+        for y in range(self.max_y):
             line = []
-            for x in xrange(self.max_x):
+            for x in range(self.max_x):
                 if self.landed.get(Coord(x, y), None):
                     line.append("X")
                 else:
                     line.append(".")
-            print "".join(line)
+            print("".join(line))
 
     def check_block(self, coord):
         """
